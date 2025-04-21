@@ -10,22 +10,23 @@ const router = express.Router();
 
 router.post('/signup', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, password,email } = req.body;
 
-    const existingUser = await User.findOne({ username });
+    const existingUser = await User.findOne({ username,email });
 
     if (existingUser) {
-      return res.status(400).json({ error: 'Something went wrongm, try again.' });
+      return res.status(400).json({ error: 'The username or email already existing' });
     }
 
     const hashedPassword = bcrypt.hashSync(password, parseInt(process.env.SALT_ROUNDS));
 
-    const user = await User.create({ username, hashedPassword });
+    const user = await User.create({ username, hashedPassword, email });
 
     const token = jwt.sign(
       {
         _id: user._id,
         username: user.username,
+        isAdmin: user.isAdmin,
       },
       process.env.JWT_SECRET
     );
@@ -43,7 +44,7 @@ router.post('/signin', async (req, res) => {
     const existingUser = await User.findOne({ username });
 
     if (!existingUser) {
-      return res.status(400).json({ error: 'Invalid Credentials' });
+      return res.status(400).json({ error: 'The username not existing' });
     }
 
     const isValidPassword = bcrypt.compareSync(password, existingUser.hashedPassword);
@@ -56,6 +57,7 @@ router.post('/signin', async (req, res) => {
       {
         _id: existingUser._id,
         username: existingUser.username,
+        isAdmin: existingUser.isAdmin
       },
       process.env.JWT_SECRET
     );
